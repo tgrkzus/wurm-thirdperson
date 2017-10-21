@@ -18,7 +18,8 @@ public class ThirdPerson implements WurmClientMod, Initable, PreInitable, Consol
     private boolean tpActive = false;
     private static Logger logger = Logger.getLogger(ThirdPerson.class.getName());
     private float dist = 2.5f;
-    private float height = 2.5f;
+    private float pitch = 75.0f;
+    private float zoomFactor = 1.0f;
 
     @Override
     public void preInit() {
@@ -27,8 +28,6 @@ public class ThirdPerson implements WurmClientMod, Initable, PreInitable, Consol
 
     @Override
     public void init() {
-
-
         HookManager.getInstance().registerHook("com.wurmonline.client.renderer.WorldRender",
                 "getCameraX", null,
                 new InvocationHandlerFactory() {
@@ -38,13 +37,20 @@ public class ThirdPerson implements WurmClientMod, Initable, PreInitable, Consol
 
                             @Override
                             public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                                RenderVector camera = ReflectionUtil.getPrivateField(
-                                        proxy, ReflectionUtil.getField(proxy.getClass(), "cameraOffset"));
 
-                                float x = camera.getX();
-                                float z = camera.getZ();
-                                double rotation = Math.atan2(z, x);
-                                return -dist * Math.cos(rotation) + (float) method.invoke(proxy, args);
+
+                                if (tpActive) {
+                                    RenderVector camera = ReflectionUtil.getPrivateField(
+                                            proxy, ReflectionUtil.getField(proxy.getClass(), "cameraOffset"));
+
+                                    float x = camera.getX();
+                                    float z = camera.getZ();
+                                    double rotation = Math.atan2(z, x);
+                                    return zoomFactor * -dist * Math.cos(rotation) * Math.cos(Math.toRadians(pitch)) + (float) method.invoke(proxy, args);
+                                }
+                                else {
+                                    return method.invoke(proxy, args);
+                                }
                             }
                         };
                     }
@@ -59,7 +65,12 @@ public class ThirdPerson implements WurmClientMod, Initable, PreInitable, Consol
 
                             @Override
                             public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                                return height + (float) method.invoke(proxy, args);
+                                if (tpActive) {
+                                    return zoomFactor * Math.sin(Math.toRadians(pitch)) + (float) method.invoke(proxy, args);
+                                }
+                                else {
+                                    return method.invoke(proxy, args);
+                                }
                             }
                         };
                     }
@@ -74,13 +85,18 @@ public class ThirdPerson implements WurmClientMod, Initable, PreInitable, Consol
 
                             @Override
                             public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                                RenderVector camera = ReflectionUtil.getPrivateField(
-                                        proxy, ReflectionUtil.getField(proxy.getClass(), "cameraOffset"));
+                                if (tpActive) {
+                                    RenderVector camera = ReflectionUtil.getPrivateField(
+                                            proxy, ReflectionUtil.getField(proxy.getClass(), "cameraOffset"));
 
-                                float x = camera.getX();
-                                float z = camera.getZ();
-                                double rotation = Math.atan2(z, x);
-                                return -dist * Math.sin(rotation) + (float) method.invoke(proxy, args);
+                                    float x = camera.getX();
+                                    float z = camera.getZ();
+                                    double rotation = Math.atan2(z, x);
+                                    return zoomFactor * -dist * Math.sin(rotation) * Math.cos(Math.toRadians(pitch)) + (float) method.invoke(proxy, args);
+                                }
+                                else {
+                                    return method.invoke(proxy, args);
+                                }
                             }
                         };
                     }
@@ -90,20 +106,26 @@ public class ThirdPerson implements WurmClientMod, Initable, PreInitable, Consol
 
     public void toggleTP() {
         tpActive = !tpActive;
-
-        if (tpActive) {
-
-        }
-        else {
-
-        }
     }
 
     @Override
     public boolean handleInput(String string, Boolean aBoolean) {
         if (string != null && string.startsWith("toggle tp")) {
-            System.out.println("Toggle TP");
             toggleTP();
+            return true;
+        }
+
+        if (string != null && string.startsWith("tp zoom-in")) {
+            pitch -= 1.0f;
+            if (zoomFactor < 0.0f) {
+                zoomFactor = 0.0f;
+            }
+            return true;
+        }
+
+        if (string != null && string.startsWith("tp zoom-out")) {
+            pitch += 1.0f;
+            return true;
         }
         return false;
     }
