@@ -146,7 +146,6 @@ public class ThirdPerson implements WurmClientMod, Initable, PreInitable, Consol
     }
 
     public void setPitch(float factor) {
-        System.out.println(factor);
         pitch = factor;
 
         if (pitch < PITCH_MIN) {
