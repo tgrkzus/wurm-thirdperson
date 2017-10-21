@@ -21,6 +21,12 @@ public class ThirdPerson implements WurmClientMod, Initable, PreInitable, Consol
     private float pitch = 75.0f;
     private float zoomFactor = 1.0f;
 
+    private static final float ZOOM_MAX = 2.5f;
+    private static final float ZOOM_MIN = 0.0f;
+
+    private static final float PITCH_MAX = 90.0f;
+    private static final float PITCH_MIN = 45.0f;
+
     @Override
     public void preInit() {
 
@@ -104,6 +110,38 @@ public class ThirdPerson implements WurmClientMod, Initable, PreInitable, Consol
         ModConsole.addConsoleListener(this);
     }
 
+    public void addZoom(float factor) {
+        setZoom(zoomFactor + factor);
+    }
+
+    public void setZoom(float factor) {
+        zoomFactor = factor;
+
+        if (zoomFactor < ZOOM_MIN) {
+            zoomFactor = ZOOM_MIN;
+        }
+
+        if (zoomFactor > ZOOM_MAX) {
+            zoomFactor = ZOOM_MAX;
+        }
+    }
+
+    public void addPitch(float factor) {
+        setPitch(pitch + factor);
+    }
+
+    public void setPitch(float factor) {
+        pitch = factor;
+
+        if (pitch < PITCH_MIN) {
+            pitch = PITCH_MIN;
+        }
+
+        if (pitch > PITCH_MAX) {
+            pitch = PITCH_MAX;
+        }
+    }
+
     public void toggleTP() {
         tpActive = !tpActive;
     }
@@ -116,15 +154,12 @@ public class ThirdPerson implements WurmClientMod, Initable, PreInitable, Consol
         }
 
         if (string != null && string.startsWith("tp zoom-in")) {
-            pitch -= 1.0f;
-            if (zoomFactor < 0.0f) {
-                zoomFactor = 0.0f;
-            }
+            addZoom(-0.1f);
             return true;
         }
 
         if (string != null && string.startsWith("tp zoom-out")) {
-            pitch += 1.0f;
+            addZoom(0.1f);
             return true;
         }
         return false;
