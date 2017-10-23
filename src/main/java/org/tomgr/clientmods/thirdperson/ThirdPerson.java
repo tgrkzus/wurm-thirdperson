@@ -21,6 +21,7 @@ public class ThirdPerson implements WurmClientMod, Initable, PreInitable, Consol
     private float dist = 4.0f;
     private float pitch = 45.0f;
     private float zoomFactor = 1.0f;
+    private float xOffset = 0.0f;
 
     private static final float ZOOM_MAX = 2.5f;
     private static final float ZOOM_MIN = 0.0f;
@@ -35,6 +36,36 @@ public class ThirdPerson implements WurmClientMod, Initable, PreInitable, Consol
 
     @Override
     public void init() {
+        HookManager.getInstance().registerHook("com.wurmonline.client.renderer.WorldRender",
+                "calculateCameraOffset", null,
+                new InvocationHandlerFactory() {
+                    @Override
+                    public InvocationHandler createInvocationHandler() {
+                        return new InvocationHandler() {
+                            @Override
+                            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                                method.invoke(proxy, args);
+                                if (tpActive) {
+                                    RenderVector camera = ReflectionUtil.getPrivateField(
+                                            proxy, ReflectionUtil.getField(proxy.getClass(), "cameraOffset"));
+                                    World world = ReflectionUtil.getPrivateField(
+                                            proxy, ReflectionUtil.getField(proxy.getClass(), "world"));
+
+                                    float x = camera.getX();
+                                    float y = camera.getY();
+                                    float z = camera.getZ();
+                                    double yaw = Math.atan2(z, x);
+
+                                    RenderVector target = new RenderVector(xOffset, 0,  0);
+                                    target.rotateY(Math.toRadians(world.getPlayerRotX()));
+                                    camera.add(target);
+                                }
+                                return null;
+                            }
+                        };
+                    }
+                });
+
         HookManager.getInstance().registerHook("com.wurmonline.client.renderer.WorldRender",
                 "getCameraX", null,
                 new InvocationHandlerFactory() {
@@ -175,6 +206,22 @@ public class ThirdPerson implements WurmClientMod, Initable, PreInitable, Consol
 
         if (string != null && string.startsWith("tp zoom-out")) {
             addZoom(0.1f);
+            return true;
+        }
+
+        if (string != null && string.startsWith("tp set-xoffset")) {
+            String[] tokens = string.split("\\s+");
+
+            if (tokens.length != 3) {
+                System.out.println("Format: tp set-xoffset <value>");
+            }
+
+            try {
+                xOffset = Float.parseFloat(tokens[2]);
+            }
+            catch (NumberFormatException e) {
+                System.out.println("Format: tp set-xoffset <value>");
+            }
             return true;
         }
         return false;
